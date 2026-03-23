@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Kubernetes Job Submitter</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            width: 400px;
+            margin: 80px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .result {
+            margin-top: 25px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .status {
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .logs {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .jobid {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h2>Job Submitter</h2>
+
+        <label>Job Name</label>
+        <input id="job_name" placeholder="data-processing">
+
+        <label>Container Image</label>
+        <input id="image" value="python:3.11">
+
+        <label>Command</label>
+        <input id="command" value="echo Hello">
+
+        <button onclick="submitJob()">Submit Job</button>
+
+        <div class="result">
+            <p><b>Job ID:</b> <span id="jobid" class="jobid">-</span></p>
+            <p><b>Status:</b> <span id="status" class="status">Waiting</span></p>
+            <p class="logs" id="logs">Logs will appear here...</p>
+        </div>
+
+    </div>
+
+    <script>
+        let jobId = null;
+
+        async function submitJob() {
+            let job_name = document.getElementById("job_name").value;
+            let image = document.getElementById("image").value;
+            let command = document.getElementById("command").value;
+
+            try {
+                let res = await fetch(`http://localhost:8000/jobs?job_name=${job_name}&image=${image}&command=${command}`, {
+                    method: "POST"
+                });
+
+                let data = await res.json();
+                jobId = data.job_id;
+
+                document.getElementById("jobid").innerText = jobId;
+                document.getElementById("status").innerText = "Submitted";
+                document.getElementById("logs").innerText = "Waiting for execution...";
+
+            } catch (e) {
+                alert("Backend not reachable!");
+            }
+        }
+
+        // Polling
+        setInterval(async() => {
+            if (!jobId) return;
+
+            try {
+                let res = await fetch(`http://localhost:8000/jobs/${jobId}`);
+                let data = await res.json();
+
+                let statusElement = document.getElementById("status");
+
+                // ✅ Update text
+                statusElement.innerText = data.status;
+                document.getElementById("logs").innerText = data.logs;
+
+                // ✅ ADD COLOR LOGIC HERE
+                if (data.status === "Completed") {
+                    statusElement.style.color = "green";
+                } else if (data.status === "Running") {
+                    statusElement.style.color = "orange";
+                } else {
+                    statusElement.style.color = "#007bff";
+                }
+
+            } catch (e) {
+                console.log("Polling error");
+            }
+        }, 2000);
+    </script>
+
+</body>
+
+</html>
