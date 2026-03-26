@@ -20,3 +20,11 @@ User submits job → Backend processes request → Kubernetes Job is created →
 
 ## Note
 Kubernetes execution is simulated locally due to environment constraints, but full integration logic is implemented.
+
+## Architecture Diagram
+
+![Architecture](images/architecture.png)
+
+## UI Screenshot
+
+![UI](images/ui.png)
