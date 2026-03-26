@@ -102,6 +102,8 @@
             <p><b>Job ID:</b> <span id="jobid" class="jobid">-</span></p>
             <p><b>Status:</b> <span id="status" class="status">Waiting</span></p>
             <p class="logs" id="logs">Logs will appear here...</p>
+            <p><b>Start Time:</b> <span id="start"></span></p>
+            <p><b>Completion Time:</b> <span id="end"></span></p>
         </div>
 
     </div>
@@ -125,6 +127,8 @@
                 document.getElementById("jobid").innerText = jobId;
                 document.getElementById("status").innerText = "Submitted";
                 document.getElementById("logs").innerText = "Waiting for execution...";
+                document.getElementById("start").innerText = data.start_time;
+                document.getElementById("end").innerText = data.completion_time;
 
             } catch (e) {
                 alert("Backend not reachable!");
@@ -141,11 +145,15 @@
 
                 let statusElement = document.getElementById("status");
 
-                // ✅ Update text
+                // Status + logs
                 statusElement.innerText = data.status;
                 document.getElementById("logs").innerText = data.logs;
 
-                // ✅ ADD COLOR LOGIC HERE
+                // ✅ ADD THIS (TIME FIX)
+                document.getElementById("start").innerText = data.start_time;
+                document.getElementById("end").innerText = data.completion_time;
+
+                // Color logic
                 if (data.status === "Completed") {
                     statusElement.style.color = "green";
                 } else if (data.status === "Running") {

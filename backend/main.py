@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 import time
 import threading
+import datetime
 
 # Kubernetes imports
 from kubernetes import client, config
@@ -29,7 +30,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     image TEXT,
     command TEXT,
     status TEXT,
-    logs TEXT
+    logs TEXT,
+    start_time TEXT,
+    completion_time TEXT
 )
 """)
 conn.commit()
@@ -37,7 +40,6 @@ conn.commit()
 # -------- Kubernetes Function --------
 def create_k8s_job(job_name, image, command):
     try:
-        # Try loading config
         try:
             config.load_kube_config()
         except:
@@ -71,17 +73,24 @@ def create_k8s_job(job_name, image, command):
         print("K8s Error:", e)
         return "Kubernetes not available"
 
+
 # -------- Simulated Execution --------
 def run_job(job_id):
     print(f"Running job {job_id}")
 
+    # Update status to Running
     cursor.execute("UPDATE jobs SET status=? WHERE id=?", ("Running", job_id))
     conn.commit()
 
     time.sleep(5)
 
-    cursor.execute("UPDATE jobs SET status=?, logs=? WHERE id=?",
-                   ("Completed", "Job executed successfully!", job_id))
+    # Set completion time
+    completion_time = str(datetime.datetime.now())
+
+    cursor.execute(
+        "UPDATE jobs SET status=?, logs=?, completion_time=? WHERE id=?",
+        ("Completed", "Job executed successfully!", completion_time, job_id)
+    )
     conn.commit()
 
     print(f"Completed job {job_id}")
@@ -99,10 +108,13 @@ async def create_job(request: Request):
 
     print("Received:", job_name, image, command)
 
-    # Save to DB
+    # Set start time
+    start_time = str(datetime.datetime.now())
+
+    # Save to DB (UPDATED)
     cursor.execute(
-        "INSERT INTO jobs (job_name, image, command, status, logs) VALUES (?, ?, ?, ?, ?)",
-        (job_name, image, command, "Pending", "")
+        "INSERT INTO jobs (job_name, image, command, status, logs, start_time, completion_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (job_name, image, command, "Pending", "", start_time, "")
     )
     conn.commit()
 
@@ -133,5 +145,7 @@ def get_job(job_id: int):
         "image": job[2],
         "command": job[3],
         "status": job[4],
-        "logs": job[5]
+        "logs": job[5],
+        "start_time": job[6],
+        "completion_time": job[7]
     }
